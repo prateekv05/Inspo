@@ -1,0 +1,81 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client"
+  output   = "../app/generated/prisma"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum Platform {
+  WEB
+  MOBILE
+  BOTH
+}
+
+enum CaptureMethod {
+  MANUAL_SCREENSHOT
+  PHONE_SCREENSHOT
+  SCREEN_RECORDING
+  SCREENSHOT_API
+  CHROME_ASSISTED
+}
+
+model HouseDNA {
+  id     String   @id @default(cuid())
+  always String[]
+  never  String[]
+}
+
+model Collection {
+  id          String  @id @default(cuid())
+  name        String
+  slug        String  @unique
+  description String
+  deployFor   String
+  riskPrompt  String
+  vocabTags   String[]
+  briefBlock  String
+
+  // Optional design system — every field nullable, hide the UI section when unset
+  colorPalette Json?
+  headingFont  String?
+  bodyFont     String?
+  monoFont     String?
+  spacingNotes String?
+  motionNotes  String?
+
+  items Item[]
+}
+
+model Item {
+  id          String @id @default(cuid())
+  title       String
+  conceptLine String
+  styleTags   String[]
+  vocabTags   String[]
+  imageRecipe String
+  imageUrl    String
+  sourceUrl   String?
+
+  platform Platform @default(WEB)
+
+  // Mobile-only fields
+  screenType  String?
+  platformOS  String?
+  aspectRatio String?
+
+  captureMethod CaptureMethod @default(MANUAL_SCREENSHOT)
+  createdAt     DateTime      @default(now())
+
+  collection   Collection @relation(fields: [collectionId], references: [id])
+  collectionId String
+}
