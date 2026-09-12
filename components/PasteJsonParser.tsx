@@ -145,14 +145,79 @@ function extractDesignSystem(
   return result;
 }
 
+// When `suggestedCollection` names a bucket that doesn't exist yet, Claude
+// can also propose starter content for it — description, deploy-for, vocab
+// tags, brief block — so the "create new collection" form isn't a blank
+// page. These ride alongside the item fields but are collection-level, same
+// as the design-system fields above.
+export interface ParsedCollectionSuggestion {
+  name: string;
+  description?: string;
+  deployFor?: string;
+  vocabTags?: string[];
+  briefBlock?: string;
+}
+
+function extractCollectionSuggestion(
+  obj: Record<string, unknown>,
+): { data: ParsedCollectionSuggestion | null; errors: string[] } {
+  if (
+    typeof obj.suggestedCollection !== "string" ||
+    !obj.suggestedCollection.trim()
+  ) {
+    return { data: null, errors: [] };
+  }
+
+  const errors: string[] = [];
+  const result: ParsedCollectionSuggestion = {
+    name: obj.suggestedCollection.trim(),
+  };
+
+  if ("suggestedCollectionDescription" in obj) {
+    if (typeof obj.suggestedCollectionDescription === "string") {
+      result.description = obj.suggestedCollectionDescription;
+    } else {
+      errors.push('"suggestedCollectionDescription" must be a string.');
+    }
+  }
+
+  if ("suggestedCollectionDeployFor" in obj) {
+    if (typeof obj.suggestedCollectionDeployFor === "string") {
+      result.deployFor = obj.suggestedCollectionDeployFor;
+    } else {
+      errors.push('"suggestedCollectionDeployFor" must be a string.');
+    }
+  }
+
+  if ("suggestedCollectionVocabTags" in obj) {
+    if (isStringArray(obj.suggestedCollectionVocabTags)) {
+      result.vocabTags = obj.suggestedCollectionVocabTags;
+    } else {
+      errors.push('"suggestedCollectionVocabTags" must be an array of strings.');
+    }
+  }
+
+  if ("suggestedCollectionBriefBlock" in obj) {
+    if (typeof obj.suggestedCollectionBriefBlock === "string") {
+      result.briefBlock = obj.suggestedCollectionBriefBlock;
+    } else {
+      errors.push('"suggestedCollectionBriefBlock" must be a string.');
+    }
+  }
+
+  return { data: result, errors };
+}
+
 interface PasteJsonParserProps {
   onParsed: (data: ParsedItemJson) => void;
   onDesignSystemParsed?: (data: ParsedDesignSystemJson | null) => void;
+  onCollectionSuggested?: (data: ParsedCollectionSuggestion | null) => void;
 }
 
 export default function PasteJsonParser({
   onParsed,
   onDesignSystemParsed,
+  onCollectionSuggested,
 }: PasteJsonParserProps) {
   const [raw, setRaw] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -174,17 +239,25 @@ export default function PasteJsonParser({
     const { data: item, errors } = validate(json);
     onParsed(item);
 
-    let designSystemError: string | null = null;
+    const allErrors = [...errors];
+
     if (typeof json === "object" && json !== null) {
+      const obj = json as Record<string, unknown>;
+
       try {
-        onDesignSystemParsed?.(extractDesignSystem(json as Record<string, unknown>));
+        onDesignSystemParsed?.(extractDesignSystem(obj));
       } catch (err) {
-        designSystemError =
-          err instanceof Error ? err.message : "Design system fields failed to parse.";
+        allErrors.push(
+          err instanceof Error ? err.message : "Design system fields failed to parse.",
+        );
       }
+
+      const { data: collectionSuggestion, errors: collectionErrors } =
+        extractCollectionSuggestion(obj);
+      onCollectionSuggested?.(collectionSuggestion);
+      allErrors.push(...collectionErrors);
     }
 
-    const allErrors = designSystemError ? [...errors, designSystemError] : errors;
     setError(allErrors.length > 0 ? allErrors.join(" ") : null);
   }
 

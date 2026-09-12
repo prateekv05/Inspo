@@ -61,11 +61,24 @@ Attach one screenshot and run:
 > - `suggestedCollection`: a short name for the style bucket this belongs to —
 >   suggest an existing one if it's close to something I've described to you
 >   in this conversation already, otherwise propose a new name
+> - if `suggestedCollection` is a **new** bucket (not one I've already told
+>   you about in this conversation), also include starter content for it —
+>   `suggestedCollectionDescription` (1-2 sentences on what unifies this
+>   style bucket), `suggestedCollectionDeployFor` (what kind of project this
+>   style suits, e.g. "SaaS dashboards", "personal portfolios"),
+>   `suggestedCollectionVocabTags` (array of 4-8 reusable vocabulary terms
+>   for the whole bucket — distinct from this item's own `vocabTags`), and
+>   `suggestedCollectionBriefBlock` (a paste-ready 2-4 sentence brief for
+>   briefing a designer or AI on this whole style). Omit all four if you're
+>   suggesting an existing collection I've already described.
 >
 > Don't guess at `captureMethod` — I set that manually in the app.
 
-Paste the JSON into the upload form's parser field. `suggestedCollection` isn't
-a form field — it's just there to help you decide where to file it.
+Paste the JSON into the upload form's parser field. If `suggestedCollection`
+names a bucket you already have, the app auto-selects it; if it's new, the
+app auto-fills the "create new collection" fields from the
+`suggestedCollection*` keys so you're editing a draft instead of starting
+from a blank page.
 
 ---
 
@@ -94,8 +107,10 @@ Point Claude for Chrome at the URL and run:
 >
 > **1. Tag this design** — `title`, `conceptLine`, `styleTags`, `vocabTags`,
 > `imageRecipe`, `platform`, `screenType`/`platformOS`/`aspectRatio` (mobile
-> only), `suggestedCollection`, `sourceUrl` (echo the URL) — same definitions
-> as the standard tagging prompt.
+> only), `suggestedCollection` (plus `suggestedCollectionDescription`/
+> `suggestedCollectionDeployFor`/`suggestedCollectionVocabTags`/
+> `suggestedCollectionBriefBlock` if it's a new bucket), `sourceUrl` (echo the
+> URL) — same definitions as the standard tagging prompt.
 >
 > **2. Read the real design tokens** — inspect computed styles, don't guess
 > from appearance: `colorPalette` (array of `{ "hex": "#______", "role": "..." }`
@@ -217,4 +232,5 @@ pre-fill correctly.
 | `title`, `conceptLine`, `styleTags`, `vocabTags`, `imageRecipe`, `platform`, `screenType`, `platformOS`, `aspectRatio` | `Item` fields |
 | `colorPalette`, `headingFont`, `bodyFont`, `monoFont`, `spacingNotes`, `motionNotes` | `Collection` design-system fields |
 | `always`, `never` | `HouseDNA` fields |
-| `suggestedCollection` | not a field — informs your manual choice of Collection when saving an Item |
+| `suggestedCollection` | not a field — if it matches an existing Collection name, the app auto-selects it; otherwise it pre-fills the new Collection's `name` |
+| `suggestedCollectionDescription`, `suggestedCollectionDeployFor`, `suggestedCollectionVocabTags`, `suggestedCollectionBriefBlock` | not fields — pre-fill the new Collection's `description`/`deployFor`/`vocabTags`/`briefBlock` when `suggestedCollection` is new; ignored if it matched an existing one |

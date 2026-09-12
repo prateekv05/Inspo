@@ -6,6 +6,7 @@ import CaptureUrlForm from "@/components/CaptureUrlForm";
 import PasteJsonParser, {
   type ParsedItemJson,
   type ParsedDesignSystemJson,
+  type ParsedCollectionSuggestion,
 } from "@/components/PasteJsonParser";
 import CollectionPicker, {
   type CollectionOption,
@@ -112,6 +113,35 @@ export default function UploadForm({
 
   function handleDesignSystemParsed(data: ParsedDesignSystemJson | null) {
     setPendingDesignSystem(data);
+  }
+
+  function handleCollectionSuggested(suggestion: ParsedCollectionSuggestion | null) {
+    // Only act on the first suggestion of a session — once you've picked a
+    // collection (existing or new), a later paste shouldn't yank you out of it.
+    if (!suggestion || collectionSelection.mode !== "none") return;
+
+    const existing = collections.find(
+      (c) => c.name.toLowerCase() === suggestion.name.toLowerCase(),
+    );
+    if (existing) {
+      setCollectionSelection({ mode: "existing", collectionId: existing.id });
+      return;
+    }
+
+    setCollectionSelection({ mode: "new" });
+    setNewCollectionName(suggestion.name);
+    if (suggestion.description !== undefined) {
+      setNewCollectionDescription(suggestion.description);
+    }
+    if (suggestion.deployFor !== undefined) {
+      setNewCollectionDeployFor(suggestion.deployFor);
+    }
+    if (suggestion.vocabTags !== undefined) {
+      setNewCollectionVocabTags(suggestion.vocabTags.join(", "));
+    }
+    if (suggestion.briefBlock !== undefined) {
+      setNewCollectionBriefBlock(suggestion.briefBlock);
+    }
   }
 
   function handleCaptured(capturedImageUrl: string, capturedSourceUrl: string) {
@@ -284,6 +314,7 @@ export default function UploadForm({
       <PasteJsonParser
         onParsed={handleParsed}
         onDesignSystemParsed={handleDesignSystemParsed}
+        onCollectionSuggested={handleCollectionSuggested}
       />
 
       <Field label="Title">
