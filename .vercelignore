@@ -1,0 +1,4 @@
+# The Prisma client generated locally is built for this dev machine's OS
+# (e.g. darwin-arm64), not Vercel's Linux build machines. `postinstall` runs
+# `prisma generate` fresh on Vercel, so never ship the local one.
+/app/generated/prisma
