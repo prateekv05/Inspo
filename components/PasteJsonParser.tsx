@@ -133,13 +133,14 @@ function extractDesignSystem(
     "spacingNotes",
     "motionNotes",
   ] as const) {
-    if (key in obj) {
-      const value = obj[key];
-      if (typeof value !== "string") {
-        throw new Error(`"${key}" must be a string.`);
-      }
-      result[key] = value;
+    const value = obj[key];
+    // The tagging prompt explicitly tells Claude to return `null` for a
+    // font it can't confidently identify — treat that as "not provided."
+    if (value === undefined || value === null) continue;
+    if (typeof value !== "string") {
+      throw new Error(`"${key}" must be a string.`);
     }
+    result[key] = value;
   }
 
   return result;
