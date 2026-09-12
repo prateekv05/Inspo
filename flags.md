@@ -54,6 +54,22 @@ Notes from implementing Phases 1-4, for context on non-obvious choices.
 - **4.4 ItemGrid** — became a `"use client"` component once thumbnails needed
   an `onClick` to drive the modal's open/close state; data fetching stays in
   `page.tsx` (server) and is passed down as props.
+- **11.2 deploy — Prisma "Query Engine not found" on Vercel** — the schema
+  used `generator client { provider = "prisma-client" output = "..." }` with
+  no `engineType`, which defaults to expecting the native Rust query engine
+  binary. On Vercel (Next 16 + Turbopack + a custom output path outside
+  node_modules), that binary never reliably reached the deployed function —
+  tried in order: `outputFileTracingIncludes` (bundled the file, but not at
+  a path Prisma's runtime locator checks), explicit `binaryTargets` (same
+  problem, different binary), switching to `@prisma/adapter-neon` alone
+  (necessary but not sufficient — the generator still builds binary-engine
+  shaped output without it). The actual fix: add `engineType = "client"` to
+  the generator block. That's what makes `prisma generate` stop producing
+  platform binaries at all (verified locally: zero files matching
+  `libquery_engine-*` after regenerating), so there's nothing for the
+  bundler to lose track of. Matches Prisma's documented Rust-free/driver-
+  adapter setup (https://pris.ly/d/engine-not-found-nextjs;
+  prisma/prisma#29339 was the report of the exact same failure mode).
 - **Testing note** — seeding/cleanup scripts run via `npx tsx --env-file=.env`
   against the live Neon DB during manual verification, each opening their own
   Prisma connection. Running several back-to-back briefly hit Neon's pooled
