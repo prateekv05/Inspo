@@ -2,6 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { captureScreenshot, ScreenshotCaptureError } from "@/lib/screenshotone";
 import { uploadImage } from "@/lib/blob";
 
+// Full-page capture of a heavy/animated site can take longer than the
+// platform's default function timeout, which otherwise surfaces as a bare
+// 502 with no error message in the logs.
+export const maxDuration = 60;
+
 export async function POST(request: NextRequest) {
   const body = await request.json();
   const { url } = body;
@@ -32,6 +37,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ imageUrl, sourceUrl: parsed.toString() });
   } catch (error) {
+    console.error("[capture-url] failed:", error);
     const message =
       error instanceof ScreenshotCaptureError
         ? error.message

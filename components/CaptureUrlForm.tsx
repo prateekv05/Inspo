@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState, type KeyboardEvent } from "react";
-import { uploadImageAction } from "@/app/upload/actions";
+import { upload } from "@vercel/blob/client";
 import type { CaptureMethodValue } from "@/lib/captureMethod";
 
 interface CaptureUrlFormProps {
@@ -59,9 +59,12 @@ export default function CaptureUrlForm({ onCaptured }: CaptureUrlFormProps) {
     setError(null);
 
     try {
-      const imageUrl = await uploadImageAction(file);
-      setPreviewUrl(imageUrl);
-      onCaptured(imageUrl, url.trim(), "MANUAL_SCREENSHOT");
+      const blob = await upload(file.name, file, {
+        access: "public",
+        handleUploadUrl: "/api/blob-upload",
+      });
+      setPreviewUrl(blob.url);
+      onCaptured(blob.url, url.trim(), "MANUAL_SCREENSHOT");
     } catch {
       setError("Upload failed. Try again.");
     } finally {

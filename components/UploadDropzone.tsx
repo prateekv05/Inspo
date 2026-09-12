@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, type DragEvent } from "react";
-import { uploadImageAction } from "@/app/upload/actions";
+import { upload } from "@vercel/blob/client";
 
 type Status = "staged" | "uploading" | "done" | "error";
 
@@ -39,10 +39,13 @@ export default function UploadDropzone({ onUploaded }: UploadDropzoneProps) {
     if (!file) return;
     setStatus("uploading");
 
-    uploadImageAction(file)
-      .then((url) => {
+    upload(file.name, file, {
+      access: "public",
+      handleUploadUrl: "/api/blob-upload",
+    })
+      .then((blob) => {
         setStatus("done");
-        onUploaded?.(url);
+        onUploaded?.(blob.url);
       })
       .catch(() => {
         setStatus("error");

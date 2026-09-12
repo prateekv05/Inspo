@@ -44,6 +44,10 @@ export async function captureScreenshot(
   );
 
   if (!response.ok) {
+    const body = await response.text().catch(() => "");
+    console.error(
+      `[screenshotone] capture failed for ${targetUrl}: ${response.status} ${body}`,
+    );
     throw new ScreenshotCaptureError(
       `Screenshot capture failed (${response.status}).`,
     );

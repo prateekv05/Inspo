@@ -1,17 +1,12 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { uploadImage } from "@/lib/blob";
 import { prisma } from "@/lib/prisma";
 import { uniqueCollectionSlug } from "@/lib/slug";
 import type { Platform } from "@/app/generated/prisma/enums";
 import type { Prisma } from "@/app/generated/prisma/client";
 import type { CaptureMethodValue } from "@/lib/captureMethod";
 import type { ColorSwatch } from "@/components/DesignSystemPanel";
-
-export async function uploadImageAction(file: File): Promise<string> {
-  return uploadImage(file);
-}
 
 interface NewCollectionInput {
   name: string;
