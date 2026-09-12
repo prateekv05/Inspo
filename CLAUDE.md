@@ -81,7 +81,13 @@ Full schema lives in `prisma/schema.prisma`. Summary:
 4. **Blank/optional fields should be omitted from composed output**, not
    rendered as empty sections — this applies to the composer prompt and to the
    `Copy Brief Block` / `Copy Design Tokens` outputs.
-5. **Nothing in this repo should require an `ANTHROPIC_API_KEY`.** If a future
+5. **When pasted JSON includes design-system fields (colorPalette, fonts,
+   spacingNotes, motionNotes) for a Collection that already has one or more of
+   those fields set, don't silently overwrite them.** Show a diff — old value
+   vs. new value, per field — and let the user confirm which to keep, field by
+   field or all-at-once. If the collection has nothing set yet, apply directly,
+   no confirmation needed.
+6. **Nothing in this repo should require an `ANTHROPIC_API_KEY`.** If a future
    phase adds server-side AI tagging, that's an intentional, explicitly-requested
    add-on — don't introduce it speculatively.
 

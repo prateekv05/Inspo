@@ -5,7 +5,9 @@ import { uploadImage } from "@/lib/blob";
 import { prisma } from "@/lib/prisma";
 import { uniqueCollectionSlug } from "@/lib/slug";
 import type { Platform } from "@/app/generated/prisma/enums";
+import type { Prisma } from "@/app/generated/prisma/client";
 import type { CaptureMethodValue } from "@/lib/captureMethod";
+import type { ColorSwatch } from "@/components/DesignSystemPanel";
 
 export async function uploadImageAction(file: File): Promise<string> {
   return uploadImage(file);
@@ -17,6 +19,15 @@ interface NewCollectionInput {
   deployFor: string;
   vocabTags: string[];
   briefBlock: string;
+}
+
+export interface DesignSystemUpdateInput {
+  colorPalette?: ColorSwatch[];
+  headingFont?: string;
+  bodyFont?: string;
+  monoFont?: string;
+  spacingNotes?: string;
+  motionNotes?: string;
 }
 
 export interface CreateItemInput {
@@ -34,6 +45,7 @@ export interface CreateItemInput {
   captureMethod: CaptureMethodValue;
   collectionId: string | null;
   newCollection: NewCollectionInput | null;
+  designSystemUpdate: DesignSystemUpdateInput | null;
 }
 
 export async function createItemAction(input: CreateItemInput) {
@@ -64,6 +76,22 @@ export async function createItemAction(input: CreateItemInput) {
     });
     collectionId = collection.id;
     collectionSlug = collection.slug;
+  }
+
+  if (
+    input.designSystemUpdate &&
+    Object.keys(input.designSystemUpdate).length > 0
+  ) {
+    const { colorPalette, ...restDesignSystem } = input.designSystemUpdate;
+    await prisma.collection.update({
+      where: { id: collectionId },
+      data: {
+        ...restDesignSystem,
+        ...(colorPalette !== undefined
+          ? { colorPalette: colorPalette as unknown as Prisma.InputJsonValue }
+          : {}),
+      },
+    });
   }
 
   await prisma.item.create({

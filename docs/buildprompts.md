@@ -197,11 +197,15 @@ in these prompts — just reference it if a prompt needs to recall a rule.
 
 **8.3**
 > Build `PasteJsonParser.tsx`: a textarea labeled "Paste Claude's JSON reply
-> here." On paste or blur, try `JSON.parse`, validate it has the expected keys
-> (title, conceptLine, styleTags, vocabTags, imageRecipe, platform, and
-> optionally screenType/platformOS/aspectRatio), and pre-fill the rest of the
-> form fields below. Show a clear inline error if parsing or validation fails —
+> here." On paste or blur, try `JSON.parse` and validate it has the expected
+> item keys (title, conceptLine, styleTags, vocabTags, imageRecipe, platform,
+> and optionally screenType/platformOS/aspectRatio). Pre-fill the item form
+> fields below. Show a clear inline error if parsing or validation fails —
 > don't silently fail. All pre-filled fields must remain editable afterward.
+> Separately, if the parsed JSON also contains design-system keys
+> (colorPalette, headingFont, bodyFont, monoFont, spacingNotes, motionNotes —
+> this happens when the JSON came from the combined Claude-for-Chrome prompt),
+> hold those aside for step 8.6b rather than discarding them.
 
 **8.4**
 > Add the rest of the form fields below the parser: title, conceptLine,
@@ -219,6 +223,16 @@ in these prompts — just reference it if a prompt needs to recall a rule.
 > deployFor + vocabTags + briefBlock. On submit, create the Item (and Collection
 > if new) via a server action or API route and redirect back to the library
 > grid, filtered to the collection it was just added to.
+
+**8.6b**
+> If step 8.3 held aside design-system fields: after a Collection is selected
+> (existing or newly created), check whether that collection already has any
+> of those fields set. If the collection has nothing set, apply the new values
+> directly on save — no extra step. If it already has one or more set, show a
+> small diff modal before saving: each field, old value next to new value, with
+> a per-field keep-old/use-new toggle (default to keep-old, since existing data
+> was presumably deliberate), plus a "use all new" shortcut. Apply the resolved
+> values to the Collection on confirm.
 
 ---
 

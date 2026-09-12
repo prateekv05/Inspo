@@ -25,6 +25,24 @@ export function parseColorPalette(value: unknown): ColorSwatch[] {
   );
 }
 
+export function hasDesignSystemFields(input: {
+  colorPalette: unknown;
+  headingFont: string | null;
+  bodyFont: string | null;
+  monoFont: string | null;
+  spacingNotes: string | null;
+  motionNotes: string | null;
+}): boolean {
+  return (
+    parseColorPalette(input.colorPalette).length > 0 ||
+    input.headingFont !== null ||
+    input.bodyFont !== null ||
+    input.monoFont !== null ||
+    input.spacingNotes !== null ||
+    input.motionNotes !== null
+  );
+}
+
 function formatTokens({
   colors,
   headingFont,

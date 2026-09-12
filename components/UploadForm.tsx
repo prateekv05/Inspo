@@ -5,17 +5,25 @@ import UploadDropzone from "@/components/UploadDropzone";
 import CaptureUrlForm from "@/components/CaptureUrlForm";
 import PasteJsonParser, {
   type ParsedItemJson,
+  type ParsedDesignSystemJson,
 } from "@/components/PasteJsonParser";
 import CollectionPicker, {
   type CollectionOption,
   type CollectionSelection,
 } from "@/components/CollectionPicker";
+import DesignSystemDiffModal from "@/components/DesignSystemDiffModal";
+import { hasDesignSystemFields } from "@/components/DesignSystemPanel";
 import {
   CAPTURE_METHOD_LABELS,
   CAPTURE_METHOD_VALUES,
   type CaptureMethodValue,
 } from "@/lib/captureMethod";
 import { createItemAction } from "@/app/upload/actions";
+
+type ItemSubmission = Omit<
+  Parameters<typeof createItemAction>[0],
+  "designSystemUpdate"
+>;
 
 const inputClass =
   "w-full rounded-md border border-border bg-foreground/[0.03] px-2 py-1 text-sm outline-none focus:border-foreground/30";
@@ -80,16 +88,30 @@ export default function UploadForm({
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const [pendingDesignSystem, setPendingDesignSystem] =
+    useState<ParsedDesignSystemJson | null>(null);
+  const [diffRequest, setDiffRequest] = useState<{
+    itemInput: ItemSubmission;
+    collection: CollectionOption;
+    incoming: ParsedDesignSystemJson;
+  } | null>(null);
+
   function handleParsed(data: ParsedItemJson) {
-    setTitle(data.title);
-    setConceptLine(data.conceptLine);
-    setStyleTags(data.styleTags.join(", "));
-    setVocabTags(data.vocabTags.join(", "));
-    setImageRecipe(data.imageRecipe);
-    setPlatform(data.platform);
-    setScreenType(data.screenType ?? "");
-    setPlatformOS(data.platformOS ?? "");
-    setAspectRatio(data.aspectRatio ?? "");
+    // Only fields that parsed successfully are present here — leave
+    // anything else in the form untouched rather than blanking it out.
+    if (data.title !== undefined) setTitle(data.title);
+    if (data.conceptLine !== undefined) setConceptLine(data.conceptLine);
+    if (data.styleTags !== undefined) setStyleTags(data.styleTags.join(", "));
+    if (data.vocabTags !== undefined) setVocabTags(data.vocabTags.join(", "));
+    if (data.imageRecipe !== undefined) setImageRecipe(data.imageRecipe);
+    if (data.platform !== undefined) setPlatform(data.platform);
+    if (data.screenType !== undefined) setScreenType(data.screenType);
+    if (data.platformOS !== undefined) setPlatformOS(data.platformOS);
+    if (data.aspectRatio !== undefined) setAspectRatio(data.aspectRatio);
+  }
+
+  function handleDesignSystemParsed(data: ParsedDesignSystemJson | null) {
+    setPendingDesignSystem(data);
   }
 
   function handleCaptured(capturedImageUrl: string, capturedSourceUrl: string) {
@@ -146,8 +168,7 @@ export default function UploadForm({
       return;
     }
 
-    setSubmitting(true);
-    await createItemAction({
+    const itemInput: ItemSubmission = {
       title: title.trim(),
       conceptLine: conceptLine.trim(),
       styleTags: styleTags
@@ -168,10 +189,54 @@ export default function UploadForm({
       captureMethod,
       collectionId,
       newCollection,
+    };
+
+    // A newly-created collection has nothing set yet, so only an existing
+    // collection can conflict with fields the paste held aside.
+    const targetCollection =
+      collectionSelection.mode === "existing"
+        ? collections.find((c) => c.id === collectionSelection.collectionId)
+        : undefined;
+
+    if (
+      pendingDesignSystem &&
+      targetCollection &&
+      hasDesignSystemFields(targetCollection)
+    ) {
+      setDiffRequest({
+        itemInput,
+        collection: targetCollection,
+        incoming: pendingDesignSystem,
+      });
+      return;
+    }
+
+    await submitItem(itemInput, pendingDesignSystem);
+  }
+
+  async function submitItem(
+    itemInput: ItemSubmission,
+    designSystemUpdate: ParsedDesignSystemJson | null,
+  ) {
+    setSubmitting(true);
+    await createItemAction({
+      ...itemInput,
+      designSystemUpdate:
+        designSystemUpdate && Object.keys(designSystemUpdate).length > 0
+          ? designSystemUpdate
+          : null,
     });
   }
 
+  function handleDiffResolved(resolved: ParsedDesignSystemJson) {
+    if (!diffRequest) return;
+    const { itemInput } = diffRequest;
+    setDiffRequest(null);
+    void submitItem(itemInput, resolved);
+  }
+
   return (
+    <>
     <form onSubmit={handleSubmit} className="flex flex-col gap-4">
       {captureUrlEnabled && (
         <div className="flex items-center gap-4 text-sm">
@@ -216,7 +281,10 @@ export default function UploadForm({
         />
       </Field>
 
-      <PasteJsonParser onParsed={handleParsed} />
+      <PasteJsonParser
+        onParsed={handleParsed}
+        onDesignSystemParsed={handleDesignSystemParsed}
+      />
 
       <Field label="Title">
         <input
@@ -388,5 +456,15 @@ export default function UploadForm({
         {submitting ? "Saving…" : "Add to library"}
       </button>
     </form>
+    {diffRequest && (
+      <DesignSystemDiffModal
+        collectionName={diffRequest.collection.name}
+        existing={diffRequest.collection}
+        incoming={diffRequest.incoming}
+        onCancel={() => setDiffRequest(null)}
+        onConfirm={handleDiffResolved}
+      />
+    )}
+    </>
   );
 }

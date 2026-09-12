@@ -1,10 +1,17 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import type { ColorSwatch } from "@/components/DesignSystemPanel";
 
 export interface CollectionOption {
   id: string;
   name: string;
+  colorPalette: ColorSwatch[];
+  headingFont: string | null;
+  bodyFont: string | null;
+  monoFont: string | null;
+  spacingNotes: string | null;
+  motionNotes: string | null;
 }
 
 export type CollectionSelection =
