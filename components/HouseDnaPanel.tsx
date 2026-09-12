@@ -65,12 +65,16 @@ function HouseDnaColumn({
   onChange: (items: string[]) => void;
 }) {
   const [local, setLocal] = useState(items);
+  const [prevItems, setPrevItems] = useState(items);
   const focusIndexRef = useRef<number | null>(null);
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
-  useEffect(() => {
+  // Reset local edits whenever the source `items` prop changes (e.g. after a
+  // save round-trip), computed during render instead of in an effect.
+  if (items !== prevItems) {
+    setPrevItems(items);
     setLocal(items);
-  }, [items]);
+  }
 
   useEffect(() => {
     if (focusIndexRef.current !== null) {

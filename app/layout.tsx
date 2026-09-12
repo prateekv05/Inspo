@@ -3,6 +3,8 @@ import Link from "next/link";
 import Script from "next/script";
 import { Geist, Geist_Mono } from "next/font/google";
 import ThemeToggle from "@/components/ThemeToggle";
+import { SelectionProvider } from "@/components/SelectionProvider";
+import SelectionTray from "@/components/SelectionTray";
 import "./globals.css";
 
 const THEME_INIT_SCRIPT = `(function () {
@@ -41,7 +43,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }}
         />
         <header className="flex items-center justify-between border-b border-border px-8 py-5">
-          <span className="text-sm font-medium tracking-tight">Inspo</span>
+          <Link href="/" className="text-sm font-medium tracking-tight">
+            Inspo
+          </Link>
           <div className="flex items-center gap-6">
             <Link
               href="/upload"
@@ -52,7 +56,10 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
             <ThemeToggle />
           </div>
         </header>
-        <main className="flex flex-1 flex-col">{children}</main>
+        <SelectionProvider>
+          <main className="flex flex-1 flex-col pb-16">{children}</main>
+          <SelectionTray />
+        </SelectionProvider>
       </body>
     </html>
   );

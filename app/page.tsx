@@ -63,8 +63,39 @@ export default async function Home({ searchParams }: PageProps<"/">) {
       imageUrl: true,
       captureMethod: true,
       platform: true,
+      screenType: true,
+      platformOS: true,
+      aspectRatio: true,
+      collection: {
+        select: {
+          id: true,
+          name: true,
+          briefBlock: true,
+          deployFor: true,
+          colorPalette: true,
+          headingFont: true,
+          bodyFont: true,
+          monoFont: true,
+          spacingNotes: true,
+          motionNotes: true,
+        },
+      },
     },
   });
+
+  const gridItems = items.map(({ collection: itemCollection, ...item }) => ({
+    ...item,
+    collectionId: itemCollection.id,
+    collectionName: itemCollection.name,
+    collectionBriefBlock: itemCollection.briefBlock,
+    collectionDeployFor: itemCollection.deployFor,
+    collectionColorPalette: itemCollection.colorPalette,
+    collectionHeadingFont: itemCollection.headingFont,
+    collectionBodyFont: itemCollection.bodyFont,
+    collectionMonoFont: itemCollection.monoFont,
+    collectionSpacingNotes: itemCollection.spacingNotes,
+    collectionMotionNotes: itemCollection.motionNotes,
+  }));
 
   return (
     <div className="flex flex-col gap-4 p-8">
@@ -105,7 +136,7 @@ export default async function Home({ searchParams }: PageProps<"/">) {
           motionNotes={activeCollection.motionNotes}
         />
       )}
-      <ItemGrid items={items} />
+      <ItemGrid items={gridItems} />
     </div>
   );
 }

@@ -5,26 +5,10 @@ import Image from "next/image";
 import Badge from "@/components/Badge";
 import Modal from "@/components/Modal";
 import CopyButton from "@/components/CopyButton";
+import { CAPTURE_METHOD_LABELS } from "@/lib/captureMethod";
+import { useSelection, type SelectableItem } from "@/components/SelectionProvider";
 
-interface GridItem {
-  id: string;
-  title: string;
-  conceptLine: string;
-  styleTags: string[];
-  vocabTags: string[];
-  imageRecipe: string;
-  imageUrl: string;
-  captureMethod: string;
-  platform: string;
-}
-
-const CAPTURE_METHOD_LABELS: Record<string, string> = {
-  MANUAL_SCREENSHOT: "Manual screenshot — colors approximate",
-  PHONE_SCREENSHOT: "Phone screenshot — colors approximate",
-  SCREEN_RECORDING: "Screen recording — motion notes reliable",
-  SCREENSHOT_API: "Screenshot API — colors reliable",
-  CHROME_ASSISTED: "Chrome-assisted capture — colors & fonts reliable",
-};
+type GridItem = SelectableItem;
 
 function formatItemBrief(item: GridItem): string {
   const parts = [`${item.title} — ${item.conceptLine}`];
@@ -37,6 +21,7 @@ function formatItemBrief(item: GridItem): string {
 export default function ItemGrid({ items }: { items: GridItem[] }) {
   const [openItemId, setOpenItemId] = useState<string | null>(null);
   const openItem = items.find((item) => item.id === openItemId) ?? null;
+  const { isSelected, toggle } = useSelection();
 
   if (items.length === 0) {
     return <p className="text-sm text-foreground/50">No items yet.</p>;
@@ -45,30 +30,58 @@ export default function ItemGrid({ items }: { items: GridItem[] }) {
   return (
     <>
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
-        {items.map((item) => (
-          <button
-            key={item.id}
-            type="button"
-            onClick={() => setOpenItemId(item.id)}
-            className={`group relative overflow-hidden rounded-lg border border-border text-left ${
-              item.platform === "MOBILE" ? "aspect-[9/16]" : "aspect-[4/3]"
-            }`}
-          >
-            <Image
-              src={item.imageUrl}
-              alt={item.title}
-              fill
-              className="object-cover"
-              sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
-            />
-            <Badge className="absolute top-2 right-2 max-w-[calc(100%-1rem)] truncate bg-background/80 backdrop-blur-sm">
-              {item.captureMethod}
-            </Badge>
-            <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-background/90 to-transparent p-2">
-              <p className="truncate text-sm text-foreground">{item.title}</p>
+        {items.map((item) => {
+          const selected = isSelected(item.id);
+          return (
+            <div
+              key={item.id}
+              role="button"
+              tabIndex={0}
+              onClick={() => setOpenItemId(item.id)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" || event.key === " ") {
+                  event.preventDefault();
+                  setOpenItemId(item.id);
+                }
+              }}
+              className={`group relative cursor-pointer overflow-hidden rounded-lg border text-left transition-colors ${
+                selected ? "border-foreground" : "border-border"
+              } ${item.platform === "MOBILE" ? "aspect-[9/16]" : "aspect-[4/3]"}`}
+            >
+              <Image
+                src={item.imageUrl}
+                alt={item.title}
+                fill
+                className="object-cover"
+                sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+              />
+              <button
+                type="button"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  toggle(item);
+                }}
+                aria-pressed={selected}
+                aria-label={selected ? "Remove from build" : "Add to build"}
+                className={`absolute top-2 left-2 z-10 flex h-6 w-6 items-center justify-center rounded-full border backdrop-blur-sm transition-colors ${
+                  selected
+                    ? "border-foreground bg-foreground text-background"
+                    : "border-border bg-background/80 text-foreground/70 hover:text-foreground"
+                }`}
+              >
+                {selected && (
+                  <span className="text-xs leading-none">✓</span>
+                )}
+              </button>
+              <Badge className="absolute top-2 right-2 max-w-[calc(100%-1rem)] truncate bg-background/80 backdrop-blur-sm">
+                {item.captureMethod}
+              </Badge>
+              <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-background/90 to-transparent p-2">
+                <p className="truncate text-sm text-foreground">{item.title}</p>
+              </div>
             </div>
-          </button>
-        ))}
+          );
+        })}
       </div>
 
       <Modal
