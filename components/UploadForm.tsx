@@ -144,10 +144,14 @@ export default function UploadForm({
     }
   }
 
-  function handleCaptured(capturedImageUrl: string, capturedSourceUrl: string) {
+  function handleCaptured(
+    capturedImageUrl: string,
+    capturedSourceUrl: string,
+    method: CaptureMethodValue,
+  ) {
     setImageUrl(capturedImageUrl);
     setSourceUrl(capturedSourceUrl);
-    setCaptureMethod("SCREENSHOT_API");
+    setCaptureMethod(method);
   }
 
   const isMobile = platform === "MOBILE" || platform === "BOTH";

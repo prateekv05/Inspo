@@ -1,16 +1,24 @@
 "use client";
 
-import { useState, type KeyboardEvent } from "react";
+import { useRef, useState, type KeyboardEvent } from "react";
+import { uploadImageAction } from "@/app/upload/actions";
+import type { CaptureMethodValue } from "@/lib/captureMethod";
 
 interface CaptureUrlFormProps {
-  onCaptured: (imageUrl: string, sourceUrl: string) => void;
+  onCaptured: (
+    imageUrl: string,
+    sourceUrl: string,
+    method: CaptureMethodValue,
+  ) => void;
 }
 
 export default function CaptureUrlForm({ onCaptured }: CaptureUrlFormProps) {
   const [url, setUrl] = useState("");
   const [capturing, setCapturing] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   async function handleCapture() {
     if (!url.trim() || capturing) return;
@@ -31,13 +39,33 @@ export default function CaptureUrlForm({ onCaptured }: CaptureUrlFormProps) {
       }
 
       setPreviewUrl(data.imageUrl);
-      onCaptured(data.imageUrl, data.sourceUrl);
+      onCaptured(data.imageUrl, data.sourceUrl, "SCREENSHOT_API");
     } catch (err) {
       setError(
         err instanceof Error ? err.message : "Couldn't capture that URL.",
       );
     } finally {
       setCapturing(false);
+    }
+  }
+
+  async function handleManualUpload(file: File) {
+    if (!file.type.startsWith("image/")) {
+      setError("Please select an image file.");
+      return;
+    }
+
+    setUploading(true);
+    setError(null);
+
+    try {
+      const imageUrl = await uploadImageAction(file);
+      setPreviewUrl(imageUrl);
+      onCaptured(imageUrl, url.trim(), "MANUAL_SCREENSHOT");
+    } catch {
+      setError("Upload failed. Try again.");
+    } finally {
+      setUploading(false);
     }
   }
 
@@ -67,6 +95,25 @@ export default function CaptureUrlForm({ onCaptured }: CaptureUrlFormProps) {
         >
           {capturing ? "Capturing…" : "Capture"}
         </button>
+        <button
+          type="button"
+          onClick={() => fileInputRef.current?.click()}
+          disabled={uploading}
+          className="rounded-full border border-border bg-foreground/10 px-3 py-1 text-sm text-foreground transition-colors hover:bg-foreground/15 disabled:opacity-50"
+        >
+          {uploading ? "Uploading…" : "Upload instead"}
+        </button>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          onChange={(event) => {
+            const file = event.target.files?.[0];
+            if (file) void handleManualUpload(file);
+            event.target.value = "";
+          }}
+          className="hidden"
+        />
       </div>
 
       {error && <p className="text-sm text-red-400">{error}</p>}
@@ -80,7 +127,7 @@ export default function CaptureUrlForm({ onCaptured }: CaptureUrlFormProps) {
             className="max-h-96 w-auto rounded-lg border border-border object-contain"
           />
           <span className="font-mono text-xs text-foreground/40">
-            Captured
+            Image ready
           </span>
         </div>
       )}
