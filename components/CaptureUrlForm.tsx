@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useState, type KeyboardEvent } from "react";
 
 interface CaptureUrlFormProps {
   onCaptured: (imageUrl: string, sourceUrl: string) => void;
@@ -12,8 +12,7 @@ export default function CaptureUrlForm({ onCaptured }: CaptureUrlFormProps) {
   const [error, setError] = useState<string | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
+  async function handleCapture() {
     if (!url.trim() || capturing) return;
 
     setCapturing(true);
@@ -42,18 +41,27 @@ export default function CaptureUrlForm({ onCaptured }: CaptureUrlFormProps) {
     }
   }
 
+  function handleKeyDown(event: KeyboardEvent<HTMLInputElement>) {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      void handleCapture();
+    }
+  }
+
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-2">
+    <div className="flex flex-col gap-2">
       <div className="flex gap-2">
         <input
           type="url"
           value={url}
           onChange={(e) => setUrl(e.target.value)}
+          onKeyDown={handleKeyDown}
           placeholder="https://..."
           className="flex-1 rounded-md border border-border bg-foreground/[0.03] px-2 py-1 text-sm outline-none focus:border-foreground/30"
         />
         <button
-          type="submit"
+          type="button"
+          onClick={() => void handleCapture()}
           disabled={capturing || !url.trim()}
           className="rounded-full border border-border bg-foreground/10 px-3 py-1 text-sm text-foreground transition-colors hover:bg-foreground/15 disabled:opacity-50"
         >
@@ -76,6 +84,6 @@ export default function CaptureUrlForm({ onCaptured }: CaptureUrlFormProps) {
           </span>
         </div>
       )}
-    </form>
+    </div>
   );
 }

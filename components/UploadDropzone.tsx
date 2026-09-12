@@ -1,9 +1,9 @@
 "use client";
 
-import { useRef, useState, type DragEvent } from "react";
+import { useEffect, useRef, useState, type DragEvent } from "react";
 import { uploadImageAction } from "@/app/upload/actions";
 
-type Status = "idle" | "uploading" | "done" | "error";
+type Status = "staged" | "uploading" | "done" | "error";
 
 interface UploadDropzoneProps {
   onUploaded?: (url: string) => void;
@@ -11,28 +11,37 @@ interface UploadDropzoneProps {
 
 export default function UploadDropzone({ onUploaded }: UploadDropzoneProps) {
   const inputRef = useRef<HTMLInputElement>(null);
+  const [file, setFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const [status, setStatus] = useState<Status>("idle");
+  const [status, setStatus] = useState<Status | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
 
-  function handleFile(file: File) {
-    if (!file.type.startsWith("image/")) {
+  useEffect(() => {
+    return () => {
+      if (previewUrl) URL.revokeObjectURL(previewUrl);
+    };
+  }, [previewUrl]);
+
+  function stageFile(selected: File) {
+    if (!selected.type.startsWith("image/")) {
       setError("Please select an image file.");
       return;
     }
 
     setError(null);
-    setStatus("uploading");
+    setFile(selected);
+    setPreviewUrl(URL.createObjectURL(selected));
+    setStatus("staged");
+  }
 
-    const localUrl = URL.createObjectURL(file);
-    setPreviewUrl(localUrl);
+  function handleUpload() {
+    if (!file) return;
+    setStatus("uploading");
 
     uploadImageAction(file)
       .then((url) => {
-        setPreviewUrl(url);
         setStatus("done");
-        URL.revokeObjectURL(localUrl);
         onUploaded?.(url);
       })
       .catch(() => {
@@ -44,8 +53,8 @@ export default function UploadDropzone({ onUploaded }: UploadDropzoneProps) {
   function handleDrop(event: DragEvent<HTMLDivElement>) {
     event.preventDefault();
     setIsDragging(false);
-    const file = event.dataTransfer.files?.[0];
-    if (file) handleFile(file);
+    const dropped = event.dataTransfer.files?.[0];
+    if (dropped) stageFile(dropped);
   }
 
   return (
@@ -82,8 +91,8 @@ export default function UploadDropzone({ onUploaded }: UploadDropzoneProps) {
           type="file"
           accept="image/*"
           onChange={(event) => {
-            const file = event.target.files?.[0];
-            if (file) handleFile(file);
+            const selected = event.target.files?.[0];
+            if (selected) stageFile(selected);
           }}
           className="hidden"
         />
@@ -99,10 +108,23 @@ export default function UploadDropzone({ onUploaded }: UploadDropzoneProps) {
             alt="Upload preview"
             className="max-h-96 w-auto rounded-lg border border-border object-contain"
           />
-          <span className="font-mono text-xs text-foreground/40">
-            {status === "uploading" && "Uploading…"}
-            {status === "done" && "Uploaded"}
-          </span>
+          <div className="flex items-center gap-3">
+            {status !== "done" && (
+              <button
+                type="button"
+                onClick={handleUpload}
+                disabled={status === "uploading"}
+                className="self-start rounded-full border border-border bg-foreground/10 px-3 py-1 text-sm text-foreground transition-colors hover:bg-foreground/15 disabled:opacity-50"
+              >
+                {status === "uploading" ? "Uploading…" : "Upload"}
+              </button>
+            )}
+            <span className="font-mono text-xs text-foreground/40">
+              {status === "staged" && "Ready to upload"}
+              {status === "uploading" && "Uploading…"}
+              {status === "done" && "Uploaded"}
+            </span>
+          </div>
         </div>
       )}
     </div>
