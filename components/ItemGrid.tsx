@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import Image from "next/image";
 import Badge from "@/components/Badge";
 import Modal from "@/components/Modal";
@@ -10,6 +10,7 @@ import DesignSystemPanel, {
 } from "@/components/DesignSystemPanel";
 import { CAPTURE_METHOD_LABELS } from "@/lib/captureMethod";
 import { useSelection, type SelectableItem } from "@/components/SelectionProvider";
+import { deleteItemAction } from "@/app/items/actions";
 
 type GridItem = SelectableItem;
 type ItemModalTab = "recipe" | "image";
@@ -25,8 +26,25 @@ function formatItemBrief(item: GridItem): string {
 export default function ItemGrid({ items }: { items: GridItem[] }) {
   const [openItemId, setOpenItemId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<ItemModalTab>("recipe");
+  const [isDeleting, startDelete] = useTransition();
+  const [deleteError, setDeleteError] = useState<string | null>(null);
   const openItem = items.find((item) => item.id === openItemId) ?? null;
   const { isSelected, toggle } = useSelection();
+
+  function handleDelete(item: GridItem) {
+    if (!window.confirm(`Delete "${item.title}"? This can't be undone.`)) {
+      return;
+    }
+    setDeleteError(null);
+    startDelete(async () => {
+      try {
+        await deleteItemAction(item.id, item.imageUrl);
+        setOpenItemId(null);
+      } catch {
+        setDeleteError("Couldn't delete this item. Try again.");
+      }
+    });
+  }
 
   if (items.length === 0) {
     return <p className="text-sm text-foreground/50">No items yet.</p>;
@@ -44,12 +62,14 @@ export default function ItemGrid({ items }: { items: GridItem[] }) {
               tabIndex={0}
               onClick={() => {
                 setActiveTab("recipe");
+                setDeleteError(null);
                 setOpenItemId(item.id);
               }}
               onKeyDown={(event) => {
                 if (event.key === "Enter" || event.key === " ") {
                   event.preventDefault();
                   setActiveTab("recipe");
+                  setDeleteError(null);
                   setOpenItemId(item.id);
                 }
               }}
@@ -100,27 +120,41 @@ export default function ItemGrid({ items }: { items: GridItem[] }) {
       >
         {openItem && (
           <div className="flex flex-col gap-4">
-            <div className="flex items-center gap-4 text-sm">
-              {(
-                [
-                  { value: "recipe", label: "Design Recipe" },
-                  { value: "image", label: "Image Recipe" },
-                ] as const
-              ).map((tab) => (
-                <button
-                  key={tab.value}
-                  type="button"
-                  onClick={() => setActiveTab(tab.value)}
-                  className={`transition-colors ${
-                    activeTab === tab.value
-                      ? "text-foreground"
-                      : "text-foreground/50 hover:text-foreground"
-                  }`}
-                >
-                  {tab.label}
-                </button>
-              ))}
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex items-center gap-4 text-sm">
+                {(
+                  [
+                    { value: "recipe", label: "Design Recipe" },
+                    { value: "image", label: "Image Recipe" },
+                  ] as const
+                ).map((tab) => (
+                  <button
+                    key={tab.value}
+                    type="button"
+                    onClick={() => setActiveTab(tab.value)}
+                    className={`transition-colors ${
+                      activeTab === tab.value
+                        ? "text-foreground"
+                        : "text-foreground/50 hover:text-foreground"
+                    }`}
+                  >
+                    {tab.label}
+                  </button>
+                ))}
+              </div>
+              <button
+                type="button"
+                onClick={() => handleDelete(openItem)}
+                disabled={isDeleting}
+                className="font-mono text-xs text-foreground/40 transition-colors hover:text-red-500 disabled:opacity-50"
+              >
+                {isDeleting ? "Deleting…" : "Delete"}
+              </button>
             </div>
+
+            {deleteError && (
+              <p className="text-xs text-red-500">{deleteError}</p>
+            )}
 
             {activeTab === "recipe" ? (
               <div className="flex flex-col gap-4">
