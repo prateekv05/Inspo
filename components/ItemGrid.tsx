@@ -5,10 +5,14 @@ import Image from "next/image";
 import Badge from "@/components/Badge";
 import Modal from "@/components/Modal";
 import CopyButton from "@/components/CopyButton";
+import DesignSystemPanel, {
+  hasDesignSystemFields,
+} from "@/components/DesignSystemPanel";
 import { CAPTURE_METHOD_LABELS } from "@/lib/captureMethod";
 import { useSelection, type SelectableItem } from "@/components/SelectionProvider";
 
 type GridItem = SelectableItem;
+type ItemModalTab = "recipe" | "image";
 
 function formatItemBrief(item: GridItem): string {
   const parts = [`${item.title} — ${item.conceptLine}`];
@@ -20,6 +24,7 @@ function formatItemBrief(item: GridItem): string {
 
 export default function ItemGrid({ items }: { items: GridItem[] }) {
   const [openItemId, setOpenItemId] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<ItemModalTab>("recipe");
   const openItem = items.find((item) => item.id === openItemId) ?? null;
   const { isSelected, toggle } = useSelection();
 
@@ -37,10 +42,14 @@ export default function ItemGrid({ items }: { items: GridItem[] }) {
               key={item.id}
               role="button"
               tabIndex={0}
-              onClick={() => setOpenItemId(item.id)}
+              onClick={() => {
+                setActiveTab("recipe");
+                setOpenItemId(item.id);
+              }}
               onKeyDown={(event) => {
                 if (event.key === "Enter" || event.key === " ") {
                   event.preventDefault();
+                  setActiveTab("recipe");
                   setOpenItemId(item.id);
                 }
               }}
@@ -91,71 +100,136 @@ export default function ItemGrid({ items }: { items: GridItem[] }) {
       >
         {openItem && (
           <div className="flex flex-col gap-4">
-            <div
-              className={`relative w-full overflow-hidden rounded-lg border border-border ${
-                openItem.platform === "MOBILE" ? "aspect-[9/16]" : "aspect-[16/10]"
-              }`}
-            >
-              <Image
-                src={openItem.imageUrl}
-                alt={openItem.title}
-                fill
-                className="object-cover"
-                sizes="(max-width: 672px) 100vw, 672px"
-              />
+            <div className="flex items-center gap-4 text-sm">
+              {(
+                [
+                  { value: "recipe", label: "Design Recipe" },
+                  { value: "image", label: "Image Recipe" },
+                ] as const
+              ).map((tab) => (
+                <button
+                  key={tab.value}
+                  type="button"
+                  onClick={() => setActiveTab(tab.value)}
+                  className={`transition-colors ${
+                    activeTab === tab.value
+                      ? "text-foreground"
+                      : "text-foreground/50 hover:text-foreground"
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              ))}
             </div>
 
-            <div className="flex flex-col gap-1.5">
-              <h3 className="text-lg font-medium tracking-tight">
-                {openItem.title}
-              </h3>
-              <p className="text-sm text-foreground/70">
-                {openItem.conceptLine}
-              </p>
-            </div>
-
-            <Badge className="w-fit bg-foreground/[0.03]">
-              {CAPTURE_METHOD_LABELS[openItem.captureMethod] ??
-                openItem.captureMethod}
-            </Badge>
-
-            {openItem.styleTags.length > 0 && (
-              <div className="flex flex-wrap gap-1.5">
-                {openItem.styleTags.map((tag) => (
-                  <Badge key={tag}>{tag}</Badge>
-                ))}
-              </div>
-            )}
-
-            {openItem.vocabTags.length > 0 && (
-              <div className="flex flex-wrap gap-1.5">
-                {openItem.vocabTags.map((tag) => (
-                  <span
-                    key={tag}
-                    className="inline-flex items-center rounded-full bg-foreground/[0.08] px-2 py-0.5 font-mono text-xs text-foreground/70"
-                  >
-                    {tag}
+            {activeTab === "recipe" ? (
+              <div className="flex flex-col gap-4">
+                <div className="flex flex-col gap-3">
+                  <span className="font-mono text-xs uppercase tracking-wide text-foreground/50">
+                    This item
                   </span>
-                ))}
+
+                  <div className="flex flex-col gap-1.5">
+                    <h3 className="text-lg font-medium tracking-tight">
+                      {openItem.title}
+                    </h3>
+                    <p className="text-sm text-foreground/70">
+                      {openItem.conceptLine}
+                    </p>
+                  </div>
+
+                  <Badge className="w-fit bg-foreground/[0.03]">
+                    {CAPTURE_METHOD_LABELS[openItem.captureMethod] ??
+                      openItem.captureMethod}
+                  </Badge>
+
+                  {openItem.styleTags.length > 0 && (
+                    <div className="flex flex-wrap gap-1.5">
+                      {openItem.styleTags.map((tag) => (
+                        <Badge key={tag}>{tag}</Badge>
+                      ))}
+                    </div>
+                  )}
+
+                  {openItem.vocabTags.length > 0 && (
+                    <div className="flex flex-wrap gap-1.5">
+                      {openItem.vocabTags.map((tag) => (
+                        <span
+                          key={tag}
+                          className="inline-flex items-center rounded-full bg-foreground/[0.08] px-2 py-0.5 font-mono text-xs text-foreground/70"
+                        >
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+
+                  <div>
+                    <CopyButton
+                      text={formatItemBrief(openItem)}
+                      label="Copy Item Brief"
+                    />
+                  </div>
+                </div>
+
+                {hasDesignSystemFields({
+                  colorPalette: openItem.collectionColorPalette,
+                  headingFont: openItem.collectionHeadingFont,
+                  bodyFont: openItem.collectionBodyFont,
+                  monoFont: openItem.collectionMonoFont,
+                  spacingNotes: openItem.collectionSpacingNotes,
+                  motionNotes: openItem.collectionMotionNotes,
+                }) && (
+                  <div className="flex flex-col gap-3 border-t border-border pt-4">
+                    <span className="font-mono text-xs uppercase tracking-wide text-foreground/50">
+                      Collection design system — {openItem.collectionName}
+                    </span>
+                    <DesignSystemPanel
+                      colorPalette={openItem.collectionColorPalette}
+                      headingFont={openItem.collectionHeadingFont}
+                      bodyFont={openItem.collectionBodyFont}
+                      monoFont={openItem.collectionMonoFont}
+                      spacingNotes={openItem.collectionSpacingNotes}
+                      motionNotes={openItem.collectionMotionNotes}
+                    />
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="flex flex-col gap-4">
+                <div
+                  className={`relative w-full overflow-hidden rounded-lg border border-border ${
+                    openItem.platform === "MOBILE"
+                      ? "aspect-[9/16]"
+                      : "aspect-[16/10]"
+                  }`}
+                >
+                  <Image
+                    src={openItem.imageUrl}
+                    alt={openItem.title}
+                    fill
+                    className="object-cover"
+                    sizes="(max-width: 672px) 100vw, 672px"
+                  />
+                </div>
+
+                <div className="flex flex-col gap-2 rounded-lg border border-border bg-foreground/[0.03] p-3">
+                  <span className="font-mono text-xs uppercase tracking-wide text-foreground/50">
+                    Image recipe
+                  </span>
+                  <p className="whitespace-pre-wrap font-mono text-xs text-foreground/70">
+                    {openItem.imageRecipe}
+                  </p>
+                </div>
+
+                <div>
+                  <CopyButton
+                    text={openItem.imageRecipe}
+                    label="Copy Image Prompt"
+                  />
+                </div>
               </div>
             )}
-
-            <div className="flex flex-col gap-2 rounded-lg border border-border bg-foreground/[0.03] p-3">
-              <span className="font-mono text-xs uppercase tracking-wide text-foreground/50">
-                Image recipe
-              </span>
-              <p className="whitespace-pre-wrap font-mono text-xs text-foreground/70">
-                {openItem.imageRecipe}
-              </p>
-            </div>
-
-            <div className="flex gap-2">
-              <CopyButton text={formatItemBrief(openItem)} label="Copy Brief" />
-              <CopyButton
-                text={openItem.imageRecipe}
-                label="Copy Image Prompt"
-              />
-            </div>
           </div>
         )}
       </Modal>

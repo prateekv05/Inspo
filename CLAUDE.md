@@ -67,6 +67,14 @@ Full schema lives in `prisma/schema.prisma`. Summary:
   the screenshot was obtained, which signals how trustworthy its color/font data
   is; see schema for the five values).
 
+**The Item modal has two tabs — Design Recipe (default) and Image Recipe.**
+Design Recipe has two clearly separated sections: the item's own fields, and a
+**read-only reuse of `DesignSystemPanel.tsx`** fed from the item's parent
+Collection (don't duplicate that data onto the Item model — it's a live read
+of the relation). Image Recipe is just the image + the fill-in-`[SUBJECT]`
+prompt template, kept free of any tag/brief text since it's meant to be pasted
+directly into an image-generation tool.
+
 ## Key behavioral rules
 
 1. **Every "Copy ___" button writes to the clipboard client-side.** None of them

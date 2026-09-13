@@ -171,17 +171,36 @@ in these prompts — just reference it if a prompt needs to recall a rule.
 ## Phase 7 — Item detail modal
 
 **7.1**
-> Fill in the Item modal content (shell already exists from 4.4): large image,
-> title, conceptLine, styleTags as badges, vocabTags as chips, and the capture
-> method shown as a labeled badge (e.g. "Screen recording — motion notes
-> reliable" for SCREEN_RECORDING, "Manual screenshot — colors approximate" for
-> MANUAL_SCREENSHOT, etc. — write a small label map for all five enum values).
+> Add a two-tab switcher to the Item modal (shell already exists from 4.4):
+> "Design Recipe" and "Image Recipe", defaulting to Design Recipe open. Simple
+> tab UI — no need for a router or URL state, local component state is fine.
 
 **7.2**
-> Add an "IMAGE RECIPE" box displaying the `imageRecipe` field in a
-> monospace-styled block, plus `Copy Brief` (title + conceptLine + vocabTags
-> formatted as a short paragraph) and `Copy Image Prompt` (just imageRecipe)
-> buttons.
+> Build the **Design Recipe** tab content, in two visually separated sections:
+>
+> - **"This Item"**: title, conceptLine, styleTags as badges, vocabTags as
+>   chips, the capture-method badge (label map for all five enum values, e.g.
+>   "Screen recording — motion notes reliable" for SCREEN_RECORDING, "Manual
+>   screenshot — colors approximate" for MANUAL_SCREENSHOT), and a
+>   `Copy Item Brief` button (title + conceptLine + vocabTags formatted as a
+>   short paragraph).
+> - **"Collection Design System — [Collection Name]"**: reuse
+>   `DesignSystemPanel.tsx` from 6.3 as-is, read-only, fed with the item's
+>   parent Collection's design-system fields (read the live relation, don't
+>   copy/duplicate the data onto the Item). Hidden entirely if that collection
+>   has no design-system fields set — same empty-state rule as the Collection
+>   page. Keep its own `Copy Design Tokens` button so you don't have to leave
+>   the modal to grab it.
+>
+> Visually separate the two sections clearly (a divider or distinct
+> background) so it's never ambiguous which one you're copying from.
+
+**7.3**
+> Build the **Image Recipe** tab content: the large image, an "IMAGE RECIPE"
+> box displaying the `imageRecipe` field in a monospace-styled block, and a
+> `Copy Image Prompt` button (just imageRecipe — no title/tags mixed in, since
+> this is meant to be pasted directly into an image-generation tool's prompt
+> box, not a build brief).
 
 ---
 
